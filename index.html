@@ -61,32 +61,57 @@
     for (const textElement of commentElement) {
       textElement.addEventListener("click", () => {
         const indexElementInClick = [...document.querySelectorAll('.comment')].indexOf(textElement);
-        let nameComment = commentsList[indexElementInClick].name;
+        let nameComment = commentsList[indexElementInClick].author.name;
         currentInputText.value = `>${commentsList[indexElementInClick].text.replaceAll('&gt;', '>')}
-${nameComment},`;
+${nameComment}, `;
       });
     }
   }
 
 
-  //скрипт для добавления нового комментария
-  const currentInputName = document.getElementsByClassName('add-form-name')[0];
-  const currentInputText = document.getElementsByClassName('add-form-text')[0];
-  const commentButton = document.getElementsByClassName('add-form-button')[0];
-  const commentList = document.getElementsByClassName('comments')[0];
-  const checkStatus = document.getElementsByClassName('add-form')[0];
+  //переменные для работы
+  const currentInputName = document.querySelector('.add-form-name');
+  const currentInputText = document.querySelector('.add-form-text');
+  const commentButton = document.querySelector('.add-form-button');
+  const commentList = document.querySelector('.comments');
+  const checkStatus = document.querySelector('.add-form');
+  const commentContainer = document.querySelector('.container');
   //получаем от апи
 
-
-  const fetchPromise = fetch("https://wedev-api.sky.pro/api/v1/aleksey-e/comments", {
-    method: "GET"
-  });
-  fetchPromise.then((response) => {
-    response.json().then((responseData) => {
-      commentsList = responseData.comments;
-      renderComments();
+  const start = () => {
+    let newDiv = document.createElement('div');
+    newDiv.classList.add('newComment');
+    commentList.insertAdjacentElement('afterend', newDiv);
+    document.querySelector('.newComment').innerHTML = 'Список комментариев загружается...';
+    fetch("https://wedev-api.sky.pro/api/v1/aleksey-e/comments", {
+      method: "GET"
     })
-  });
+      .then((response) => {
+        return response.json();
+      })
+      .then((responseData) => {
+        commentsList = responseData.comments;
+        renderComments();
+      })
+      .then(() => {
+        document.querySelector('.newComment').remove();
+      })
+  }
+
+  start();
+
+  const fetchAndRenderTasks = () => {
+    return fetch("https://wedev-api.sky.pro/api/v1/aleksey-e/comments", {
+      method: "GET"
+    })
+      .then((response) => {
+        return response.json();
+      })
+      .then((responseData) => {
+        commentsList = responseData.comments;
+        renderComments();
+      })
+  }
 
   function currentDateForComment(elem) {
     const currentDate = new Date(elem.date);
@@ -97,6 +122,11 @@ ${nameComment},`;
 
   function addNewComment() {
     if (currentInputName.value.trim().length !== 0 && currentInputText.value.trim().length !== 0) {
+      checkStatus.style.display = "none";
+      let newDiv = document.createElement('div');
+      newDiv.classList.add('newComment');
+      commentList.insertAdjacentElement('afterend', newDiv);
+      document.querySelector('.newComment').innerHTML = 'Комментарий добавляется';
 
       fetch("https://wedev-api.sky.pro/api/v1/aleksey-e/comments", {
         method: "POST",
@@ -105,23 +135,20 @@ ${nameComment},`;
           name: currentInputName.value,
         })
       }).then((response) => {
-        response.json().then((responseData) => {
-          commentsList = responseData.comments;
-          fetch("https://wedev-api.sky.pro/api/v1/aleksey-e/comments", {
-            method: "GET"
-          }).then((response) => {
-            response.json().then((responseData) => {
-              commentsList = responseData.comments;
-              renderComments();
-            })
-          })
+        return response.json();
+      })
+        .then((responseData) => {
+          return fetchAndRenderTasks();
         })
-      });
+        .then(() => {
+          document.querySelector('.newComment').remove();
+          checkStatus.style.display = "flex";
+        })
     };
     currentInputText.value = '';
     currentInputName.value = '';
     renderComments();
-  }
+  };
 
   checkStatus.addEventListener('input', () => {
     if (currentInputName.value.trim().length !== 0 && currentInputText.value.trim().length !== 0) {
@@ -141,10 +168,10 @@ ${nameComment},`;
     if (e.key === 'Enter') {
       addNewComment();
     }
-  })
+  });
 
-  const deleteButton = document.getElementsByClassName('delete-form-button')[0];
-  const deleteElement = document.getElementsByClassName('comments')[0];
+  const deleteButton = document.querySelector('.delete-form-button');
+  const deleteElement = document.querySelector('.comments');
 
   deleteButton.addEventListener('click', () => {
     let delElem = deleteElement.children.item(deleteElement.children.length - 1);
@@ -158,7 +185,7 @@ ${nameComment},`;
       .replaceAll("<", "&lt;")
       .replaceAll(">", "&gt;")
       .replaceAll('"', "&quot;")}`;
-  }
+  };
 
   const renderComments = () => {
     const commentsInHTML = commentsList.map((elem) => {
