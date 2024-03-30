@@ -87,7 +87,13 @@ ${nameComment}, `;
       method: "GET"
     })
       .then((response) => {
-        return response.json();
+        if (response.status === 500) {
+          throw new Error('Сервер сломался. Попробуйте позже.');
+        } else if (response.status === 200) {
+          return response.json();
+        } else {
+          throw new Error('Кажется, у вас сломался интернет, попробуйте позже');
+        }
       })
       .then((responseData) => {
         commentsList = responseData.comments;
@@ -95,6 +101,14 @@ ${nameComment}, `;
       })
       .then(() => {
         document.querySelector('.newComment').remove();
+      })
+      .catch((error) => {
+        if (error.message === 'Сервер сломался. Попробуйте позже.') {
+          alert('Сервер сломался. Попробуйте позже.');
+        } else {
+          alert('Кажется, у вас сломался интернет, попробуйте позже');
+        }
+        return;
       })
   }
 
@@ -105,11 +119,26 @@ ${nameComment}, `;
       method: "GET"
     })
       .then((response) => {
-        return response.json();
+        if (response.status === 500) {
+          throw new Error('Сервер сломался. Попробуйте позже.');
+        } else if (response.status === 200) {
+          return response.json();
+        } else {
+          throw new Error('Кажется, у вас сломался интернет, попробуйте позже');
+        }
       })
       .then((responseData) => {
         commentsList = responseData.comments;
         renderComments();
+      })
+      .catch((error) => {
+        if (error.message === 'Сервер сломался. Попробуйте позже.') {
+          alert('Сервер сломался. Попробуйте позже.');
+        } else {
+          alert('Кажется, у вас сломался интернет, попробуйте позже');
+        }
+        setInterval(fetchAndRenderTasks);
+        return;
       })
   }
 
@@ -120,8 +149,14 @@ ${nameComment}, `;
         ${currentDate.getHours() < 10 ? '0' + currentDate.getHours() : currentDate.getHours()}:${currentDate.getMinutes() < 10 ? '0' + currentDate.getMinutes() : currentDate.getMinutes()}`;
   }
 
+  const reAddNewComment = () => {
+    let interval = setInterval(addNewComment);
+    setTimeout(() => clearInterval(interval), 5000);
+  }
   function addNewComment() {
     if (currentInputName.value.trim().length !== 0 && currentInputText.value.trim().length !== 0) {
+      let thisText = currentInputText.value;
+      let thisName = currentInputName.value;
       checkStatus.style.display = "none";
       let newDiv = document.createElement('div');
       newDiv.classList.add('newComment');
@@ -133,9 +168,19 @@ ${nameComment}, `;
         body: JSON.stringify({
           text: currentInputText.value,
           name: currentInputName.value,
-        })
+          forceError: true
+        }
+        )
       }).then((response) => {
-        return response.json();
+        if (response.status === 500) {
+          throw new Error('Сервер сломался. Попробуйте позже.');
+        } else if (response.status === 400) {
+          throw new Error('Имя и комментарий должны быть не короче 3 символов');
+        } else if (response.status === 201) {
+          return response.json();
+        } else {
+          throw new Error('Кажется проблемы с интернетом');
+        }
       })
         .then((responseData) => {
           return fetchAndRenderTasks();
@@ -143,6 +188,22 @@ ${nameComment}, `;
         .then(() => {
           document.querySelector('.newComment').remove();
           checkStatus.style.display = "flex";
+        })
+        .catch((error) => {
+          if (error.message === 'Сервер сломался. Попробуйте позже.' && thisText.length > 2 && thisName.length > 2) {
+            reAddNewComment();
+          } else if (error.message === 'Сервер сломался. Попробуйте позже.') {
+            alert('Сервер сломался. Попробуйте позже.');
+          } else if (error.message === 'Имя и комментарий должны быть не короче 3 символов') {
+            alert('Имя и комментарий должны быть не короче 3 символов');
+          } else {
+            alert('Кажется, у вас сломался интернет, попробуйте позже');
+          }
+          document.querySelector('.newComment').remove();
+          checkStatus.style.display = "flex";
+          currentInputText.value = thisText;
+          currentInputName.value = thisName;
+          return;
         })
     };
     currentInputText.value = '';
