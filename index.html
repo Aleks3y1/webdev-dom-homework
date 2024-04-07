@@ -1,280 +1,35 @@
 <!DOCTYPE html>
 <html>
+  <head>
+    <title>Проект "Комменты"</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
 
-<head>
-  <title>Проект "Комменты"</title>
-  <meta charset="utf-8" />
-  <link rel="stylesheet" href="styles.css" />
-</head>
-
-<body>
-  <div class="container">
-    <ul class="comments">
-      <!-- Рендерится из JS -->
-    </ul>
-    <div class="add-form">
-      <input type="text" class="add-form-name" placeholder="Введите ваше имя" />
-      <textarea type="textarea" class="add-form-text" placeholder="Введите ваш коментарий" rows="4"></textarea>
-      <div class="add-form-row">
-        <button class="delete-form-button">Удалить</button>
-        <button class="add-form-button">Написать</button>
+  <body>
+    <div class="container">
+      <ul class="comments">
+        <!-- Рендерится из JS -->
+      </ul>
+      <div class="add-form">
+        <input
+          type="text"
+          class="add-form-name"
+          placeholder="Введите ваше имя"
+        />
+        <textarea
+          type="textarea"
+          class="add-form-text"
+          placeholder="Введите ваш коментарий"
+          rows="4"
+        ></textarea>
+        <div class="add-form-row">
+          <button class="delete-form-button">Удалить</button>
+          <button class="add-form-button">Написать</button>
+        </div>
       </div>
     </div>
-  </div>
-</body>
+  </body>
 
-<script>
-  "use scrict"
-  //скрипт для корректной работы лайков.
-  let commentsList = [];
-  const likesActive = () => {
-    const buttonLikeElements = document.querySelectorAll('.like-button');
-
-    for (const elem of buttonLikeElements) {
-      elem.addEventListener('click', (event) => {
-        event.stopPropagation();
-        let num = 0;
-        let index = elem.dataset.index;
-        for (const element of commentsList) {
-          if (element.id == index) {
-            index = num;
-          }
-          num += 1;
-        }
-        const commentIndex = commentsList[index];
-        if (commentIndex.isLiked) {
-          commentIndex.isLiked = false;
-          commentIndex.likes = commentIndex.likes - 1;
-          renderComments();
-        } else {
-          commentIndex.isLiked = true;
-          commentIndex.likes = commentIndex.likes + 1;
-          renderComments();
-        }
-      });
-    }
-  }
-
-  const reComment = () => {
-    const commentElement = document.querySelectorAll(".comment");
-
-    for (const textElement of commentElement) {
-      textElement.addEventListener("click", () => {
-        const indexElementInClick = [...document.querySelectorAll('.comment')].indexOf(textElement);
-        let nameComment = commentsList[indexElementInClick].author.name;
-        currentInputText.value = `>${commentsList[indexElementInClick].text.replaceAll('&gt;', '>')}
-${nameComment}, `;
-      });
-    }
-  }
-
-
-  //переменные для работы
-  const currentInputName = document.querySelector('.add-form-name');
-  const currentInputText = document.querySelector('.add-form-text');
-  const commentButton = document.querySelector('.add-form-button');
-  const commentList = document.querySelector('.comments');
-  const checkStatus = document.querySelector('.add-form');
-  const commentContainer = document.querySelector('.container');
-  //получаем от апи
-
-  const start = () => {
-    let newDiv = document.createElement('div');
-    newDiv.classList.add('newComment');
-    commentList.insertAdjacentElement('afterend', newDiv);
-    document.querySelector('.newComment').innerHTML = 'Список комментариев загружается...';
-    fetch("https://wedev-api.sky.pro/api/v1/aleksey-e/comments", {
-      method: "GET"
-    })
-      .then((response) => {
-        if (response.status === 500) {
-          throw new Error('Сервер сломался. Попробуйте позже.');
-        } else if (response.status === 200) {
-          return response.json();
-        } else {
-          throw new Error('Кажется, у вас сломался интернет, попробуйте позже');
-        }
-      })
-      .then((responseData) => {
-        commentsList = responseData.comments;
-        renderComments();
-      })
-      .then(() => {
-        document.querySelector('.newComment').remove();
-      })
-      .catch((error) => {
-        if (error.message === 'Сервер сломался. Попробуйте позже.') {
-          alert('Сервер сломался. Попробуйте позже.');
-        } else {
-          alert('Кажется, у вас сломался интернет, попробуйте позже');
-        }
-        return;
-      })
-  }
-
-  start();
-
-  const fetchAndRenderTasks = () => {
-    return fetch("https://wedev-api.sky.pro/api/v1/aleksey-e/comments", {
-      method: "GET"
-    })
-      .then((response) => {
-        if (response.status === 500) {
-          throw new Error('Сервер сломался. Попробуйте позже.');
-        } else if (response.status === 200) {
-          return response.json();
-        } else {
-          throw new Error('Кажется, у вас сломался интернет, попробуйте позже');
-        }
-      })
-      .then((responseData) => {
-        commentsList = responseData.comments;
-        renderComments();
-      })
-      .catch((error) => {
-        if (error.message === 'Сервер сломался. Попробуйте позже.') {
-          alert('Сервер сломался. Попробуйте позже.');
-        } else {
-          alert('Кажется, у вас сломался интернет, попробуйте позже');
-        }
-        setInterval(fetchAndRenderTasks);
-        return;
-      })
-  }
-
-  function currentDateForComment(elem) {
-    const currentDate = new Date(elem.date);
-    return `${currentDate.getDate()}.${(currentDate.getMonth() < 8 ? '0' + (currentDate.getMonth() + 1) :
-      currentDate.getMonth())}.${currentDate.getFullYear() - 2000}
-        ${currentDate.getHours() < 10 ? '0' + currentDate.getHours() : currentDate.getHours()}:${currentDate.getMinutes() < 10 ? '0' + currentDate.getMinutes() : currentDate.getMinutes()}`;
-  }
-
-  const reAddNewComment = () => {
-    let interval = setInterval(addNewComment);
-    setTimeout(() => clearInterval(interval), 5000);
-  }
-  function addNewComment() {
-    if (currentInputName.value.trim().length !== 0 && currentInputText.value.trim().length !== 0) {
-      let thisText = currentInputText.value;
-      let thisName = currentInputName.value;
-      checkStatus.style.display = "none";
-      let newDiv = document.createElement('div');
-      newDiv.classList.add('newComment');
-      commentList.insertAdjacentElement('afterend', newDiv);
-      document.querySelector('.newComment').innerHTML = 'Комментарий добавляется';
-
-      fetch("https://wedev-api.sky.pro/api/v1/aleksey-e/comments", {
-        method: "POST",
-        body: JSON.stringify({
-          text: currentInputText.value,
-          name: currentInputName.value,
-          forceError: true
-        }
-        )
-      }).then((response) => {
-        if (response.status === 500) {
-          throw new Error('Сервер сломался. Попробуйте позже.');
-        } else if (response.status === 400) {
-          throw new Error('Имя и комментарий должны быть не короче 3 символов');
-        } else if (response.status === 201) {
-          return response.json();
-        } else {
-          throw new Error('Кажется проблемы с интернетом');
-        }
-      })
-        .then((responseData) => {
-          return fetchAndRenderTasks();
-        })
-        .then(() => {
-          document.querySelector('.newComment').remove();
-          checkStatus.style.display = "flex";
-        })
-        .catch((error) => {
-          if (error.message === 'Сервер сломался. Попробуйте позже.' && thisText.length > 2 && thisName.length > 2) {
-            reAddNewComment();
-          } else if (error.message === 'Сервер сломался. Попробуйте позже.') {
-            alert('Сервер сломался. Попробуйте позже.');
-          } else if (error.message === 'Имя и комментарий должны быть не короче 3 символов') {
-            alert('Имя и комментарий должны быть не короче 3 символов');
-          } else {
-            alert('Кажется, у вас сломался интернет, попробуйте позже');
-          }
-          document.querySelector('.newComment').remove();
-          checkStatus.style.display = "flex";
-          currentInputText.value = thisText;
-          currentInputName.value = thisName;
-          return;
-        })
-    };
-    currentInputText.value = '';
-    currentInputName.value = '';
-    renderComments();
-  };
-
-  checkStatus.addEventListener('input', () => {
-    if (currentInputName.value.trim().length !== 0 && currentInputText.value.trim().length !== 0) {
-      commentButton.style.disabled = false;
-      commentButton.style.backgroundColor = '#bcec30';
-    } else {
-      commentButton.style.disabled = true;
-      commentButton.style.backgroundColor = 'grey';
-    }
-  });
-
-  commentButton.addEventListener("click", () => {
-    addNewComment();
-  });
-
-  document.addEventListener('keyup', (e) => {
-    if (e.key === 'Enter') {
-      addNewComment();
-    }
-  });
-
-  const deleteButton = document.querySelector('.delete-form-button');
-  const deleteElement = document.querySelector('.comments');
-
-  deleteButton.addEventListener('click', () => {
-    let delElem = deleteElement.children.item(deleteElement.children.length - 1);
-    delElem.remove();
-    commentsList.pop();
-  });
-
-  //рендеринг комментов
-  const sanitize = (element) => {
-    return `${element.replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;")}`;
-  };
-
-  const renderComments = () => {
-    const commentsInHTML = commentsList.map((elem) => {
-      return `
-      <li class="comment">
-        <div class="comment-header">
-          <div>${sanitize(elem.author.name)}</div>
-          <div>${currentDateForComment(elem)}</div>
-        </div>
-        <div class="comment-body">
-          <div class="comment-text">
-            ${sanitize(elem.text)}
-          </div>
-        </div>
-        <div class="comment-footer">
-          <div class="likes">
-            <span class="likes-counter">${elem.likes}</span>
-            <button data-index="${elem.id}" class="like-button ${elem.isLiked ? "-active-like" : ""}"></button>
-          </div>
-        </div>
-      </li>`;
-    }).join('');
-    commentList.innerHTML = commentsInHTML;
-    likesActive();
-    reComment();
-  };
-
-  renderComments();
-</script>
-
+  <script type="module" src="main.js"></script>
 </html>
