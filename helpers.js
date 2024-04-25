@@ -1,14 +1,12 @@
 import {
-  currentInputName,
-  currentInputText,
-  checkStatus,
   fetchAndRenderTasks,
   commentsList,
   commentList,
-  commentButton,
   deleteButton,
 } from "./main.js";
-import { getTodos, postComment } from "./api.js";
+import { postComment, token } from "./api.js";
+
+export let nameAuthor;
 
 export const sanitize = (element) => {
   return `${element
@@ -58,11 +56,11 @@ export const likesActive = () => {
       if (commentIndex.isLiked) {
         commentIndex.isLiked = false;
         commentIndex.likes = commentIndex.likes - 1;
-        renderComments(commentList, commentsList);
+        renderComments(commentList);
       } else {
         commentIndex.isLiked = true;
         commentIndex.likes = commentIndex.likes + 1;
-        renderComments(commentList, commentsList);
+        renderComments(commentList);
       }
     });
   }
@@ -70,13 +68,20 @@ export const likesActive = () => {
 
 export const reComment = () => {
   const commentElement = document.querySelectorAll(".comment");
+  let currentInputText = document.querySelector(".add-form-text");
 
   for (const textElement of commentElement) {
     textElement.addEventListener("click", () => {
       const indexElementInClick = [
         ...document.querySelectorAll(".comment"),
       ].indexOf(textElement);
-      let nameComment = commentsList[indexElementInClick].author.name;
+      let nameComment;
+
+      if (commentsList[indexElementInClick].name != null) {
+        nameComment = commentsList[indexElementInClick].name;
+      } else {
+        nameComment = commentsList[indexElementInClick].author.name;
+      }
       currentInputText.value = `>${commentsList[
         indexElementInClick
       ].text.replaceAll("&gt;", ">")}
@@ -85,68 +90,86 @@ ${nameComment}, `;
   }
 };
 
-export function render(elemen) {
+export function render(element) {
+  let authorName;
+  let likesCount;
+  let isLike;
+  if (typeof element.name != "undefined") {
+    authorName = element.name;
+    likesCount = element.likesCounter;
+    isLike = element.likeButton;
+  } else {
+    authorName = element.author.name;
+    likesCount = element.likes;
+    isLike = element.isLiked;
+  }
+  nameAuthor = authorName;
   return `
     <li class="comment">
       <div class="comment-header">
-        <div>${sanitize(elemen.author.name)}</div>
-        <div>${currentDateForComment(elemen)}</div>
+        <div>${sanitize(authorName)}</div>
+        <div>${currentDateForComment(element)}</div>
       </div>
       <div class="comment-body">
         <div class="comment-text">
-          ${sanitize(elemen.text)}
+          ${sanitize(element.text)}
         </div>
       </div>
       <div class="comment-footer">
         <div class="likes">
-          <span class="likes-counter">${elemen.likes}</span>
-          <button data-index="${elemen.id}" class="like-button ${
-    elemen.isLiked ? "-active-like" : ""
+          <span class="likes-counter">${likesCount}</span>
+          <button data-index="${element.id}" class="like-button ${
+    isLike ? "-active-like" : ""
   }"></button>
         </div>
       </div>
     </li>`;
 }
 
-export const renderComments = (commentList, commentsList) => {
+export const renderComments = (commentList) => {
+  commentList = document.querySelector(".comments");
   commentList.innerHTML = commentsList
     .map((elem) => {
       return render(elem);
     })
     .join("");
+  if (document.querySelector(".add-form-button") != null) {
+    disableForm();
+    //addOnEnter();
+    reComment();
+    //deleteComment();
+    addCommentOnClick();
+  }
   likesActive();
-  reComment();
 };
 
 export function addNewComment(retry = 3) {
-  if (
-    currentInputName.value.trim().length !== 0 &&
-    currentInputText.value.trim().length !== 0
-  ) {
-    let thisText = currentInputText.value;
-    let thisName = currentInputName.value;
+  let InputName = nameAuthor;
+  let InputText = document.querySelector(".add-form-text");
+  if (InputText.value.trim().length !== 0) {
+    let thisText = InputText.value;
+    const checkStatus = document.querySelector(".add-form");
     checkStatus.style.display = "none";
     let newDiv = document.createElement("div");
     newDiv.classList.add("newComment");
     commentList.insertAdjacentElement("afterend", newDiv);
-    document.querySelector(".newComment").innerHTML = "Комментарий добавляется";
+    newDiv.innerHTML = "Комментарий добавляется";
 
-    postComment(currentInputText, currentInputName)
+    postComment(token, InputText, InputName)
       .then(() => {
+        InputText.value = "";
         return fetchAndRenderTasks();
       })
       .then(() => {
-        currentInputText.value = "";
-        currentInputName.value = "";
+
         document.querySelector(".newComment").remove();
         checkStatus.style.display = "flex";
-        renderComments(commentList, commentsList);
+        renderComments(commentList);
       })
       .catch((error) => {
         if (
           error.message === "Сервер сломался. Попробуйте позже." &&
-          thisText.length > 2 &&
-          thisName.length > 2
+          thisText.length > 2
         ) {
           reAddNewComment(retry);
         } else if (error.message === "Сервер сломался. Попробуйте позже.") {
@@ -158,25 +181,27 @@ export function addNewComment(retry = 3) {
         } else if (!window.navigator.onLine) {
           document.querySelector(".newComment").remove();
           checkStatus.style.display = "flex";
-          currentInputText.value = thisText;
-          currentInputName.value = thisName;
+          InputText.value = thisText;
           throw new Error("Кажется, у вас сломался интернет, попробуйте позже");
         }
-        document.querySelector(".newComment").remove();
+        newDiv.remove();
         checkStatus.style.display = "flex";
-        currentInputText.value = thisText;
-        currentInputName.value = thisName;
+        //InputText.value = thisText;
       });
+
+    // renderPage();
+    // renderCom();
+    // renderComments(commentList, commentsList);
   }
 }
 
-export const disableForm = (check) => {
+const disableForm = (check) => {
+  const commentButton = document.querySelector(".add-form-button");
   check = document.querySelector(".add-form");
+
   check.addEventListener("input", () => {
-    if (
-      currentInputName.value.trim().length !== 0 &&
-      currentInputText.value.trim().length !== 0
-    ) {
+    let currenText = document.querySelector(".add-form-text");
+    if (currenText.value.trim().length > 2) {
       commentButton.removeAttribute("disabled");
       commentButton.style.backgroundColor = "#bcec30";
     } else {
@@ -186,21 +211,23 @@ export const disableForm = (check) => {
   });
 };
 
-export const addOnEnter = () => {
+const addOnEnter = () => {
   document.addEventListener("keyup", (e) => {
+    const commentButton = document.querySelector(".add-form-button");
     if (e.key === "Enter" && !commentButton.hasAttribute("disabled")) {
       addNewComment();
     }
   });
 };
 
-export const addCommentOnClick = () => {
-  commentButton.addEventListener("click", () => {
+const addCommentOnClick = () => {
+  let clickAddCommentButton = document.querySelector(".add-form-button");
+  clickAddCommentButton.addEventListener("click", () => {
     addNewComment();
   });
 };
 
-export const deleteComment = () => {
+const deleteComment = () => {
   deleteButton.addEventListener("click", () => {
     const deleteElement = document.querySelector(".comments");
     if (commentsList.length > 0) {
@@ -211,27 +238,4 @@ export const deleteComment = () => {
       commentsList.pop();
     }
   });
-};
-
-export const start = () => {
-  let newDiv = document.createElement("div");
-  newDiv.classList.add("newComment");
-  commentList.insertAdjacentElement("afterend", newDiv);
-  document.querySelector(".newComment").innerHTML =
-    "Список комментариев загружается...";
-  getTodos()
-    .then((responseData) => {
-      commentsList = responseData.comments;
-      renderComments(commentList, commentsList);
-    })
-    .then(() => {
-      document.querySelector(".newComment").remove();
-    })
-    .catch((error) => {
-      if (error.message === "Сервер сломался. Попробуйте позже.") {
-        alert("Сервер сломался. Попробуйте позже.");
-      } else if (!window.navigator.onLine) {
-        throw new Error("Кажется, у вас сломался интернет, попробуйте позже");
-      }
-    });
 };
