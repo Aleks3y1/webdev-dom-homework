@@ -150,6 +150,7 @@ export const renderComments = (commentList) => {
         deleteComment();
         disableForm();
         reComment();
+        likesActive();
         isListenerAdded = true;
     } else if (document.querySelector('.add-form-button') !== null) {
         disableForm();
