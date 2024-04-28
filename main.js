@@ -1,17 +1,11 @@
 import { getTodos } from './api.js';
 import { authnPage } from './renderAuthorization.js';
-import {
-    currentDateForComment,
-    likesActive,
-    renderComments,
-} from './helpers.js';
+import { renderComments } from './helpers.js';
 
 export let commentsList = [];
 export const commentList = document.querySelector('.comments');
 export const checkStatus = document.querySelector('.add-form');
 export const deleteButton = document.querySelector('.delete-form-button');
-
-likesActive();
 
 export const fetchAndRenderTasks = () => {
     getTodos()
@@ -23,7 +17,7 @@ export const fetchAndRenderTasks = () => {
                     date: comment.date,
                     text: comment.text,
                     likesCounter: comment.likes,
-                    likeButton: false,
+                    likeButton: comment.isLiked
                 };
             });
             renderComments();
@@ -33,7 +27,7 @@ export const fetchAndRenderTasks = () => {
                 alert('Сервер сломался. Попробуйте позже.');
             } else if (!window.navigator.onLine) {
                 throw new Error(
-                    'Кажется, у вас сломался интернет, попробуйте позже',
+                    'Кажется, у вас сломался интернет, попробуйте позже'
                 );
             }
             return true;
@@ -50,7 +44,7 @@ export const start = () => {
     getTodos()
         .then((responseData) => {
             commentsList = responseData.comments;
-            renderComments(commentList);
+            renderComments();
         })
         .then(() => {
             document.querySelector('.newComment').remove();
@@ -66,7 +60,7 @@ export const start = () => {
     divRegistration.classList.add('registration');
     commentList.insertAdjacentElement('afterend', divRegistration);
     document.querySelector('.registration').innerHTML =
-        "<p>Чтобы добавить комментарий, <a class='auth' href='#'>авторизируйтесь<a/></p>";
+        '<p>Чтобы добавить комментарий, <a class=\'auth\' href=\'#\'>авторизируйтесь<a/></p>';
     const authElem = document.querySelector('.auth');
 
     authElem.addEventListener('click', () => {

@@ -1,5 +1,5 @@
-import { getTodos, login, setToken } from './api.js';
-import { nameAuthor, renderComments } from './helpers.js';
+import { getTodos, login, nameUser, setName, setToken } from './api.js';
+import { renderComments } from './helpers.js';
 
 export const authnPage = () => {
     document.querySelector('.container').innerHTML = `
@@ -17,15 +17,15 @@ export const authnPage = () => {
       />
         <div class="auth-buttons">
           <button class="auth-agree">Войти</button>
-          <a class="reg-button" href="#">Зарегистрироваться</a>
+          
         </div>
       </div> 
     `;
-    const regElem = document.querySelector('.reg-button');
-
-    regElem.addEventListener('click', () => {
-        regPage();
-    });
+//     const regElem = document.querySelector('.reg-button');
+// //<a class="reg-button" href="#">Зарегистрироваться</a>
+//     regElem.addEventListener('click', () => {
+//         regPage();
+//     });
     const authElem = document.querySelector('.auth-agree');
     const loginInputValue = document.querySelector('.auth-name');
     const passwordInputValue = document.querySelector('.auth-password');
@@ -33,14 +33,14 @@ export const authnPage = () => {
     authElem.addEventListener('click', () => {
         login({
             login: loginInputValue.value,
-            password: passwordInputValue.value,
+            password: passwordInputValue.value
         })
             .then((responseData) => {
                 setToken(responseData.user.token);
+                setName(responseData.user.name);
             })
             .then(() => {
                 renderPage();
-                // renderComments(commentList, commentsList);
                 renderCom();
             });
     });
@@ -102,7 +102,7 @@ export const renderPage = () => {
   <input
     type="text"
     class="add-form-name"
-    placeholder="${nameAuthor}"
+    placeholder="${nameUser}"
     disabled="true"
   />
   <textarea

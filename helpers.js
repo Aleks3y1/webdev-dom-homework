@@ -1,13 +1,6 @@
-import {
-    fetchAndRenderTasks,
-    commentsList,
-    commentList,
-    deleteButton,
-} from './main.js';
-import { postComment, token } from './api.js';
+import { fetchAndRenderTasks, commentsList, commentList } from './main.js';
+import { deleteApi, likeApi, nameUser, postComment, token } from './api.js';
 import { format } from 'date-fns';
-
-export let nameAuthor;
 
 export const sanitize = (element) => {
     return `${element
@@ -17,31 +10,26 @@ export const sanitize = (element) => {
         .replaceAll('"', '&quot;')}`;
 };
 
-export function currentDateForComment(elem) {
-    const currentDate = new Date(elem.date);
-    return `${currentDate.getDate()}.${
-        currentDate.getMonth() < 8
-            ? '0' + (currentDate.getMonth() + 1)
-            : currentDate.getMonth()
-    }.${currentDate.getFullYear() - 2000}
-        ${
-            currentDate.getHours() < 10
-                ? '0' + currentDate.getHours()
-                : currentDate.getHours()
-        }:${
-            currentDate.getMinutes() < 10
-                ? '0' + currentDate.getMinutes()
-                : currentDate.getMinutes()
-        }`;
-}
+// export function currentDateForComment(elem) {
+//     const currentDate = new Date(elem.date);
+//     return `${currentDate.getDate()}.${
+//         currentDate.getMonth() < 8
+//             ? '0' + (currentDate.getMonth() + 1)
+//             : currentDate.getMonth()
+//     }.${currentDate.getFullYear() - 2000}
+//         ${
+//             currentDate.getHours() < 10
+//                 ? '0' + currentDate.getHours()
+//                 : currentDate.getHours()
+//         }:${
+//             currentDate.getMinutes() < 10
+//                 ? '0' + currentDate.getMinutes()
+//                 : currentDate.getMinutes()
+//         }`;
+// }
 
-export const reAddNewComment = (retry = 3) => {
-    if (retry > 0) {
-        retry -= 1;
-        addNewComment(retry);
-    } else {
-        alert('Не удалось отправить сообщение. Проблемы с сервером.');
-    }
+export const reAddNewComment = () => {
+    addNewComment();
 };
 
 export const likesActive = () => {
@@ -51,18 +39,36 @@ export const likesActive = () => {
         elem.addEventListener('click', (event) => {
             event.stopPropagation();
             const index = [
-                ...document.querySelectorAll('.like-button'),
+                ...document.querySelectorAll('.like-button')
             ].indexOf(elem);
             const commentIndex = commentsList[index];
-            if (commentIndex.isLiked) {
-                commentIndex.isLiked = false;
-                commentIndex.likes = commentIndex.likes - 1;
-                renderComments(commentList);
-            } else {
-                commentIndex.isLiked = true;
-                commentIndex.likes = commentIndex.likes + 1;
-                renderComments(commentList);
-            }
+            // if (commentIndex.name !== undefined) {
+            //     if (commentIndex.isLiked) {
+            //         commentIndex.isLiked = false;
+            //         commentIndex.likesCounter = commentIndex.likesCounter - 1;
+            //         renderComments(commentList);
+            //     } else {
+            //         commentIndex.isLiked = true;
+            //         commentIndex.likesCounter = commentIndex.likesCounter + 1;
+            //         renderComments(commentList);
+            //     }
+            // } else {
+
+            let idLike = commentIndex.id;
+            likeApi({ id: idLike }).then((response) => {
+                if (response.result.isLiked) {
+                    response.result.isLiked = false;
+                    response.result.likes = response.result.likes - 1;
+
+                    fetchAndRenderTasks();
+                } else {
+                    response.result.isLiked = true;
+                    response.result.likes = response.result.likes + 1;
+
+                    fetchAndRenderTasks();
+                }
+            });
+            // }
         });
     }
 };
@@ -74,28 +80,28 @@ export const reComment = () => {
     for (const textElement of commentElement) {
         textElement.addEventListener('click', () => {
             const indexElementInClick = [
-                ...document.querySelectorAll('.comment'),
+                ...document.querySelectorAll('.comment')
             ].indexOf(textElement);
             let nameComment;
-
-            if (commentsList[indexElementInClick].name != null) {
+            if (commentsList[indexElementInClick].name !== undefined) {
                 nameComment = commentsList[indexElementInClick].name;
             } else {
                 nameComment = commentsList[indexElementInClick].author.name;
             }
             currentInputText.value = `>${commentsList[
                 indexElementInClick
-            ].text.replaceAll('&gt;', '>')}
+                ].text.replaceAll('&gt;', '>')}
 ${nameComment}, `;
         });
     }
 };
 
 export function render(element) {
+    if (!element) return;
     let authorName;
     let likesCount;
     let isLike;
-    if (typeof element.name != 'undefined') {
+    if (element.name !== undefined) {
         authorName = element.name;
         likesCount = element.likesCounter;
         isLike = element.likeButton;
@@ -104,7 +110,6 @@ export function render(element) {
         likesCount = element.likes;
         isLike = element.isLiked;
     }
-    nameAuthor = authorName;
     const createDate = format(new Date(element.date), 'yyyy-MM-dd hh.mm.ss');
     return `
     <li class="comment">
@@ -121,12 +126,14 @@ export function render(element) {
         <div class="likes">
           <span class="likes-counter">${likesCount}</span>
           <button data-index="${element.id}" class="like-button ${
-              isLike ? '-active-like' : ''
-          }"></button>
+        isLike ? '-active-like' : ''
+    }"></button>
         </div>
       </div>
     </li>`;
 }
+
+let isListenerAdded = false;
 
 export const renderComments = (commentList) => {
     commentList = document.querySelector('.comments');
@@ -135,19 +142,35 @@ export const renderComments = (commentList) => {
             return render(elem);
         })
         .join('');
-    if (document.querySelector('.add-form-button') != null) {
-        disableForm();
-        //addOnEnter();
-        reComment();
-        //deleteComment();
+    if (
+        document.querySelector('.add-form-button') !== null &&
+        !isListenerAdded
+    ) {
         addCommentOnClick();
+        deleteComment();
+        disableForm();
+        reComment();
+        isListenerAdded = true;
+    } else if (document.querySelector('.add-form-button') !== null) {
+        disableForm();
+        reComment();
+        likesActive();
     }
-    likesActive();
 };
 
-export function addNewComment(retry = 3) {
-    let InputName = nameAuthor;
+export const renderCommentsOnDelete = (list) => {
+    list = document.querySelector('.comments');
+    list.innerHTML = commentsList
+        .map((elem) => {
+            return render(elem);
+        })
+        .join('');
+};
+
+export function addNewComment() {
+    let InputName = nameUser;
     let InputText = document.querySelector('.add-form-text');
+
     if (InputText.value.trim().length !== 0) {
         let thisText = InputText.value;
         const checkStatus = document.querySelector('.add-form');
@@ -172,7 +195,7 @@ export function addNewComment(retry = 3) {
                     error.message === 'Сервер сломался. Попробуйте позже.' &&
                     thisText.length > 2
                 ) {
-                    reAddNewComment(retry);
+                    reAddNewComment();
                 } else if (
                     error.message === 'Сервер сломался. Попробуйте позже.'
                 ) {
@@ -187,17 +210,12 @@ export function addNewComment(retry = 3) {
                     checkStatus.style.display = 'flex';
                     InputText.value = thisText;
                     throw new Error(
-                        'Кажется, у вас сломался интернет, попробуйте позже',
+                        'Кажется, у вас сломался интернет, попробуйте позже'
                     );
                 }
                 newDiv.remove();
                 checkStatus.style.display = 'flex';
-                //InputText.value = thisText;
             });
-
-        // renderPage();
-        // renderCom();
-        // renderComments(commentList, commentsList);
     }
 }
 
@@ -227,21 +245,29 @@ const addOnEnter = () => {
 };
 
 const addCommentOnClick = () => {
-    let clickAddCommentButton = document.querySelector('.add-form-button');
+    const clickAddCommentButton = document.querySelector('.add-form-button');
     clickAddCommentButton.addEventListener('click', () => {
         addNewComment();
     });
 };
 
 const deleteComment = () => {
-    deleteButton.addEventListener('click', () => {
-        const deleteElement = document.querySelector('.comments');
-        if (commentsList.length > 0) {
-            let delElem = deleteElement.children.item(
-                deleteElement.children.length - 1,
-            );
-            delElem.remove();
-            commentsList.pop();
-        }
-    });
+    document
+        .querySelector('.delete-form-button')
+        .addEventListener('click', () => {
+            const deleteElement = document.querySelector('.comments');
+            if (commentsList.length > 0) {
+                let lastElement = commentsList.length - 1;
+                let id = commentsList[lastElement].id;
+                let delElem = deleteElement.children.item(
+                    deleteElement.children.length - 1
+                );
+
+                deleteApi({ id }).then(() => {
+                    delElem.remove();
+                    commentsList.pop();
+                    return renderComments(commentList);
+                });
+            }
+        });
 };
