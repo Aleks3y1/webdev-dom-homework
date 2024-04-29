@@ -1,12 +1,8 @@
-import { getTodos, login, setToken } from "./api.js";
-import {
-  nameAuthor,
-  renderComments,
-} from "./helpers.js";
-
+import { getTodos, login, nameUser, setName, setToken } from './api.js';
+import { renderComments } from './helpers.js';
 
 export const authnPage = () => {
-  document.querySelector(".container").innerHTML = `
+    document.querySelector('.container').innerHTML = `
     <div class="add-form">
     <div class="auth-tag">Форма входа</div>
         <input
@@ -21,52 +17,52 @@ export const authnPage = () => {
       />
         <div class="auth-buttons">
           <button class="auth-agree">Войти</button>
-          <a class="reg-button" href="#">Зарегистрироваться</a>
+          
         </div>
       </div> 
     `;
-  const regElem = document.querySelector(".reg-button");
+//     const regElem = document.querySelector('.reg-button');
+// //<a class="reg-button" href="#">Зарегистрироваться</a>
+//     regElem.addEventListener('click', () => {
+//         regPage();
+//     });
+    const authElem = document.querySelector('.auth-agree');
+    const loginInputValue = document.querySelector('.auth-name');
+    const passwordInputValue = document.querySelector('.auth-password');
 
-  regElem.addEventListener("click", () => {
-    regPage();
-  });
-  const authElem = document.querySelector(".auth-agree");
-  const loginInputValue = document.querySelector(".auth-name");
-  const passwordInputValue = document.querySelector(".auth-password");
-
-  authElem.addEventListener("click", () => {
-    login({
-      login: loginInputValue.value,
-      password: passwordInputValue.value,
-    })
-      .then((responseData) => {
-        setToken(responseData.user.token);
-      })
-      .then(() => {
-        renderPage();
-        // renderComments(commentList, commentsList);
-        renderCom();
-      });
-  });
-};
-
-export const renderCom = () => {
-  const comments = document.querySelector(".comments");
-  getTodos()
-    .then((responseData) => {
-      renderComments(comments);
-    })
-    .catch((error) => {
-      if (error.message === "Сервер сломался. Попробуйте позже.") {
-        alert("Сервер сломался. Попробуйте позже.");
-      } else {
-        alert("Кажется, у вас сломался интернет, попробуйте позже");
-      }
+    authElem.addEventListener('click', () => {
+        login({
+            login: loginInputValue.value,
+            password: passwordInputValue.value
+        })
+            .then((responseData) => {
+                setToken(responseData.user.token);
+                setName(responseData.user.name);
+            })
+            .then(() => {
+                renderPage();
+                renderCom();
+            });
     });
 };
 
+export const renderCom = () => {
+    const comments = document.querySelector('.comments');
+    getTodos()
+        .then((responseData) => {
+            renderComments(comments);
+        })
+        .catch((error) => {
+            if (error.message === 'Сервер сломался. Попробуйте позже.') {
+                alert('Сервер сломался. Попробуйте позже.');
+            } else {
+                alert('Кажется, у вас сломался интернет, попробуйте позже');
+            }
+        });
+};
+
 export const regPage = () => {
-  document.querySelector(".container").innerHTML = `
+    document.querySelector('.container').innerHTML = `
     <div class="add-form">
     <div class="auth-tag">Форма регистрации</div>
             <input
@@ -90,15 +86,15 @@ export const regPage = () => {
         </div>
       </div> 
     `;
-  const authElem = document.querySelector(".auth");
+    const authElem = document.querySelector('.auth');
 
-  authElem.addEventListener("click", () => {
-    authnPage();
-  });
+    authElem.addEventListener('click', () => {
+        authnPage();
+    });
 };
 
 export const renderPage = () => {
-  document.querySelector(".container").innerHTML = `
+    document.querySelector('.container').innerHTML = `
   <ul class="comments">
   <!-- Рендерится из JS -->
 </ul>
@@ -106,7 +102,7 @@ export const renderPage = () => {
   <input
     type="text"
     class="add-form-name"
-    placeholder="${nameAuthor}"
+    placeholder="${nameUser}"
     disabled="true"
   />
   <textarea

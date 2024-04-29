@@ -1,4 +1,4 @@
-import {getTodos} from "./api.js";
+import { getTodos } from './api.js';
 
 export const renderComplete = (commentList, commentsList, renderComments) => {
     getTodos()
@@ -7,22 +7,24 @@ export const renderComplete = (commentList, commentsList, renderComments) => {
             renderComments(commentList, commentsList);
         })
         .then(() => {
-            document.querySelector(".newComment").remove();
+            document.querySelector('.newComment').remove();
         })
         .catch((error) => {
-            if (error.message === "Сервер сломался. Попробуйте позже.") {
-                alert("Сервер сломался. Попробуйте позже.");
+            if (error.message === 'Сервер сломался. Попробуйте позже.') {
+                alert('Сервер сломался. Попробуйте позже.');
             } else {
-                alert("Кажется, у вас сломался интернет, попробуйте позже");
+                alert('Кажется, у вас сломался интернет, попробуйте позже');
             }
         });
-}
+};
 
 export const renderCommentForm = () => {
-    let divForm = document.createElement("div");
-    divForm.classList.add("add-form");
-    document.querySelector(".comments").insertAdjacentElement("afterend", divForm);
-    document.querySelector(".add-form").innerHTML = `
+    let divForm = document.createElement('div');
+    divForm.classList.add('add-form');
+    document
+        .querySelector('.comments')
+        .insertAdjacentElement('afterend', divForm);
+    document.querySelector('.add-form').innerHTML = `
             <input
           type="text"
           class="add-form-name"
@@ -39,4 +41,4 @@ export const renderCommentForm = () => {
           <button class="add-form-button">Написать</button>
         </div>
     `;
-}
+};
